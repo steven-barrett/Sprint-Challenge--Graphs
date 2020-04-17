@@ -8,7 +8,6 @@ from ast import literal_eval
 # Load world
 world = World()
 
-
 # You may uncomment the smaller graphs for development and testing purposes.
 # map_file = "maps/test_line.txt"
 # map_file = "maps/test_cross.txt"
@@ -29,7 +28,115 @@ player = Player(world.starting_room)
 # traversal_path = ['n', 'n']
 traversal_path = []
 
+# Helper function to pick out an unexplored rooom
+def pick_unexplored_room(room):
+    # Using a fixed order, return a room's first unexplored direction
+    directions = ['n', 's', 'e', 'w']  # Createa fixed order
+    random.shuffle(directions)  # randomly select it
+    # Loop on each direction 
+    for direction in directions:
+        explored = room.get(direction)
+        if explored == '?':
+            return direction
+    return None
 
+# Helper function to FIND an unexplored room
+def find_unexplored_room(room, graph):    
+    # Look for closest unexplored exit and return a path to it
+    # Create a an empty list...
+    qq = []
+
+    # Add a path to the room_id to the queue
+    qq.append([room])
+
+    # Create an empty set to store visited rooms
+    visited = set()
+
+    # While the list is not empty...
+    while qq:
+        # pop the first path out     
+        path = qq.pop(0)
+
+        # grab the last room from the path
+        room = path[-1]
+
+        # If last room has an unexplored exit, return the path
+        # Hopefully my nested loop isn't too slow... :/
+        if pick_unexplored_room(graph[room]):
+            rewind = []
+            for i in range(1, len(path)):
+                for room_direction, room_id in graph[path[i-1]].items():
+                    if room_id == path[i]:
+                        rewind.append(room_direction)
+                        break
+            return rewind
+
+        # If it has not been visited
+        if room not in visited:
+            # Mark it as visited
+            visited.add(room)
+            # Then add a path to all unvisited rooms to the back of the queue
+            for next_room in graph[room].values():
+                if next_room not in visited:
+                    qq.append(path + [next_room])
+    return None
+
+def explore_rooms(player, traversal_path):    
+    # add first room to graph and initialize exits
+    reverse_d = {'n': 's', 's': 'n', 'w': 'e', 'e': 'w'}     
+    graph = {player.current_room.id: {}}
+    for exits in player.current_room.get_exits():
+        graph[player.current_room.id][exits] = '?'
+
+    # enter a room in an unexplored direction
+    direction = pick_unexplored_room(graph[player.current_room.id])
+    if direction is None:
+        print("Help, I am trapped in a room with no exits!")
+        return -1
+
+    # make a previous_room variable and save the last room
+    prev_room = player.current_room
+
+    # append the direction to the traversal path
+    player.travel(direction)
+    traversal_path.append(direction)
+
+    # constant loop While True:
+    while True:
+        # if new room, add to graph and initialize exits
+        if player.current_room.id not in graph:
+            graph[player.current_room.id] = {}
+            for exits in player.current_room.get_exits():  # Loop through all the exits and initialize them
+                graph[player.current_room.id][exits] = '?'
+
+        # if entered from an unexplored direction, make connections between the new room and the previous room
+        if graph[player.current_room.id][reverse_d[direction]] == '?':
+            graph[player.current_room.id][reverse_d[direction]] = prev_room.id
+            graph[prev_room.id][direction] = player.current_room.id
+
+        # if there is an unexplored exit:
+        direction = pick_unexplored_room(graph[player.current_room.id])
+        if direction:
+            # enter room in that direction
+            prev_room = player.current_room
+            player.travel(direction)
+            # add step to traversal_path
+            traversal_path.append(direction)
+        # else there is not an unexplored exit:
+        else:
+            # find a path to the closest unexplored exit!
+            return_path = find_unexplored_room(player.current_room.id, graph)
+            # if there are no unexplored exits exploration is complete!!
+            if return_path is None:
+                break
+            # walk the path while adding to the traversal path
+            while return_path:
+                direction = return_path.pop(0)
+                player.travel(direction)
+                traversal_path.append(direction)
+
+# Call the function to start the exploring!!                            
+explore_rooms(player, traversal_path)
 
 # TRAVERSAL TEST
 visited_rooms = set()
@@ -51,12 +158,12 @@ else:
 #######
 # UNCOMMENT TO WALK AROUND
 #######
-player.current_room.print_room_description(player)
-while True:
-    cmds = input("-> ").lower().split(" ")
-    if cmds[0] in ["n", "s", "e", "w"]:
-        player.travel(cmds[0], True)
-    elif cmds[0] == "q":
-        break
-    else:
-        print("I did not understand that command.")
+# player.current_room.print_room_description(player)
+# while True:
+#     cmds = input("-> ").lower().split(" ")
+#     if cmds[0] in ["n", "s", "e", "w"]:
+#         player.travel(cmds[0], True)
+#     elif cmds[0] == "q":
+#         break
+#     else:
+#         print("I did not understand that command.")
