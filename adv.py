@@ -29,10 +29,12 @@ player = Player(world.starting_room)
 # traversal_path = ['n', 'n']
 traversal_path = []
 
-def pick_unexplored_room(room):    
+# Helper function to pick out an unexplored rooom
+def pick_unexplored_room(room):
     # Using a fixed order, return a room's first unexplored direction
-    directions = ['n', 's', 'e', 'w']
-    random.shuffle(directions)
+    directions = ['n', 's', 'e', 'w']  # Createa fixed order
+    random.shuffle(directions)  # randomly select it
+    # Loop on each direction 
     for direction in directions:
         explored = room.get(direction)
         if explored == '?':
@@ -79,36 +81,43 @@ def find_unexplored_room(room, graph):
                     q.append(path + [next_room])
     return None
 
-
-# def explore_rooms(player, traversal_path):
+def explore_rooms(player, traversal_path):    
     # add first room to graph and initialize exits
+    reverse_d = {'n': 's', 's': 'n', 'w': 'e', 'e': 'w'}     
+    graph = {player.current_room.id: {}}
+    for exits in player.current_room.get_exits():
+        graph[player.current_room.id][exits] = '?'
 
     # enter a room in an unexplored direction
+    direction = pick_unexplored_room(graph[player.current_room.id])
+    if direction is None:
+        print("Help, I am trapped in a room with no exits!")
+        return -1
 
     # make a previous_room variable and save the last room
+    prev_room = player.current_room
+
     # append the direction to the traversal path
+    player.travel(direction)
+    traversal_path.append(direction)
 
-    # constant loop while True:...
+    # constant loop While True:
+    while True:
         # if new room, add to graph and initialize exits
+        if player.current_room.id not in graph:
+            graph[player.current_room.id] = {}
+            for exits in player.current_room.get_exits():  # Loop through all the exits and initialize them
+                graph[player.current_room.id][exits] = '?'
 
-        # if entered from unexplored direction, make connections between room and previous room
+        # if entered from an unexplored direction, make connections between the new room and the previous room
+        if graph[player.current_room.id][reverse_d[direction]] == '?':
+            graph[player.current_room.id][reverse_d[direction]] = prev_room.id
+            graph[prev_room.id][direction] = player.current_room.id
 
-        # if there is an unexplored exit:
+        
 
-            # enter room in that direction
-
-            # add step to traversal_path
-        # else there is no unexplored exit
-        # else 
-            # map a path to the closest unexplored exit
-
-
-            # if there aren't any unexplored exits, exploration is complete
-
-
-            # walk path while adding to traversal_path
-
-# explore_rooms(player, traversal_path)
+# Call the function to start the exploring!!                            
+explore_rooms(player, traversal_path)
 
 # TRAVERSAL TEST
 visited_rooms = set()
